@@ -3,4 +3,5 @@ TESTE ENTRADA
 *
 **
 ***
-**** *****Total asteriscos: 15
+**** *****
+Total asteriscos: 15
