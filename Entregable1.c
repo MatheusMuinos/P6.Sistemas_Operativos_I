@@ -24,18 +24,11 @@ int main (int argc, char *argv[]) {
 
     // abrir entrada archivo y obtener tamaño
     int descriptor_entrada = open (entradafile, O_RDONLY);
-    if (descriptor_entrada < 0) {
-        perror ("open entrada");
-        return 1;
-    }
 
+    // obtener información del archivo
     struct stat stat_entrada;
-    if (fstat (descriptor_entrada, &stat_entrada) < 0) {
-        perror ("fstat entrada");
-        close (descriptor_entrada);
-        return 1;
-    }
 
+    // obtener información del archivo
     size_t tamaño_entrada = (size_t) stat_entrada.st_size;
 
     // mapear archivo de entrada (solo lectura)
@@ -55,7 +48,13 @@ int main (int argc, char *argv[]) {
     }
 
     // crear buffer temporal para el contenido intermedio
-    char *buffer_temporal_intermedio = malloc (tamaño_intermedio);
+    char *buffer_compartido = mmap(NULL, tamaño_intermedio, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+~
+
+    // crear archivo de salida con tamaño tamaño_intermedio
+    int descriptor_salida = open (salidafile, O_RDWR | O_CREAT | O_TRUNC, 0666); // haz el truncate para que no tenga nada
+
+    size_t tamaño_total_map = tamaño_intermedio + sizeof(int);
 
     // llenar buffer temporal intermedio
     size_t posición = 0;
@@ -63,15 +62,15 @@ int main (int argc, char *argv[]) {
         unsigned char caracter_atual = (unsigned char) map_entrada[i]; //
     
         if (isalpha(caracter_atual)) { // mira si es una letra
-            buffer_temporal_intermedio[posición++] = (char) toupper(caracter_atual); // convierte a mayúscula
+            buffer_compartido[posición++] = (char) toupper(caracter_atual); // convierte a mayúscula
         }
         else if (isdigit(caracter_atual)) { // mira si es un dígito
             int digitos = caracter_atual - '0'; // convierte el carácter a su valor numérico
             for (int k = 0; k < digitos; k++) {
-                buffer_temporal_intermedio[posición++] = '_'; // agrega los huecos
+                buffer_compartido[posición++] = '_'; // agrega los huecos
             }
         } else {
-            buffer_temporal_intermedio[posición++] = (char) caracter_atual; // copia otros caracteres tal cual
+            buffer_compartido[posición++] = (char) caracter_atual; // copia otros caracteres tal cual
         }
     }
 
